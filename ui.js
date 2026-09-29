@@ -16,6 +16,22 @@ const UI = (() => {
     s = s.replace(/\*(.+?)\*/g, "<i>$1</i>");
     return s;
   }
+  // Option letters are re-shuffled every session, so a hardcoded "Correct: B
+  // and E" written into the stored explanation text can point at the wrong
+  // letters once the shuffle happens. Strip any such lead-in and rebuild it
+  // fresh from this session's actual q.answers, so it's always in sync with
+  // the letters actually highlighted on screen.
+  function letterList(letters) {
+    const l = letters.slice().sort();
+    if (l.length <= 1) return l.join("");
+    return l.slice(0, -1).join(", ") + " and " + l[l.length - 1];
+  }
+  function explanationHtmlFor(q, tag, attrs) {
+    if (!q.explanation) return "";
+    const stripped = q.explanation.replace(/^\*\*Correct:[^*]*\*\*\.?\s*/i, "");
+    const correctLine = `**Correct: ${letterList(q.answers)}.**`;
+    return `<${tag} ${attrs || ""}>${mdLite(correctLine + " " + stripped)}</${tag}>`;
+  }
   function fmtTime(totalSeconds) {
     const s = Math.max(0, Math.round(totalSeconds));
     const m = Math.floor(s / 60);
@@ -315,7 +331,7 @@ const UI = (() => {
       <div class="q-slide ${cls}">
         <div class="q-eyebrow">${esc(q.category || "IKM")} ${sourceTag}</div>
         <div class="q-text">${esc(q.question)}</div>
-        <div class="q-prompt">${q.multi ? "Select all that apply" : "Select one"}</div>
+        <div class="q-prompt">Select all that apply</div>
         <div class="options">${opts}</div>
         ${hintHtml}
       </div>`;
@@ -414,7 +430,7 @@ const UI = (() => {
 
     const themeCls = isCorrect ? "correct-theme" : "incorrect-theme";
     const titleMark = isCorrect ? "✓ Excellent!" : "✕ Incorrect";
-    const explanationHtml = q.explanation ? `<div class="explain-text">${mdLite(q.explanation)}</div>` : "";
+    const explanationHtml = explanationHtmlFor(q, "div", 'class="explain-text"');
     
     footer.innerHTML = `
       <div class="reveal-panel-wrapper ${themeCls}">
@@ -577,7 +593,7 @@ const UI = (() => {
         </div>
         <div class="r-detail" ${pq.isCorrect ? "hidden" : ""}>
           <div class="options" style="margin-top:16px;">${optionsHtml}</div>
-          ${q.explanation ? `<p class="explain-text" style="margin-top:16px;">${mdLite(q.explanation)}</p>` : ""}
+          ${explanationHtmlFor(q, "p", 'class="explain-text" style="margin-top:16px;"')}
         </div>
       </div>`;
   }

@@ -108,12 +108,13 @@ const Engine = (() => {
   function isCorrect(q, chosen) {
     return (chosen || []).slice().sort().join("") === q.answers.slice().sort().join("");
   }
+  // Every question is multi-select: tapping an option toggles it, regardless
+  // of how many options are actually correct. Grading (isCorrect) is still
+  // an exact match against q.answers, so over- or under-selecting still counts wrong.
   function selectAnswer(session, letter) {
     const q = currentQuestion(session);
     const cur = chosenOf(session, q);
-    let next;
-    if (!q.multi) next = [letter];
-    else next = cur.includes(letter) ? cur.filter((l) => l !== letter) : cur.concat(letter).sort();
+    const next = cur.includes(letter) ? cur.filter((l) => l !== letter) : cur.concat(letter).sort();
     if (next.length) session.answers[q.uid] = next;
     else delete session.answers[q.uid];
   }
